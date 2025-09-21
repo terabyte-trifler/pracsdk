@@ -1,13 +1,11 @@
+// hardhat.config.ts
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const SEPOLIA_RPC = process.env.SEPOLIA_RPC || "";
-const RSK_TESTNET_RPC = process.env.RSK_TESTNET_RPC || ""; // Rootstock Testnet
-const HEDERA_EVM_RPC = process.env.HEDERA_EVM_RPC || "";   // Hedera EVM testnet RPC (e.g., "https://testnet.hashio.io/api")
-
-const PK = process.env.PRIVATE_KEY || "0x"+"1".repeat(64);
+const PK = process.env.PRIVATE_KEY || "";
+const ACCOUNTS = /^0x[0-9a-fA-F]{64}$/.test(PK) ? [PK] : [];
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -17,23 +15,19 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {},
     sepolia: {
-      url: SEPOLIA_RPC,
-      accounts: [PK],
+      url: process.env.SEPOLIA_RPC || "",
+      accounts: ACCOUNTS,
     },
     rskTestnet: {
-      url: RSK_TESTNET_RPC,
-      accounts: [PK],
+      url: process.env.RSK_TESTNET_RPC || "",
+      accounts: ACCOUNTS,
       chainId: 31,
-      gasPrice: 100000000, // tune if needed
+      gasPrice: 100000000,
     },
     hederaTestnet: {
-      url: HEDERA_EVM_RPC,
-      accounts: [PK],
+      url: process.env.HEDERA_EVM_RPC || "",
+      accounts: ACCOUNTS,
     },
-  },
-  etherscan: {
-    // optional: add api keys if you want verify
-    // apiKey: { sepolia: process.env.ETHERSCAN_KEY || "" }
   },
 };
 
