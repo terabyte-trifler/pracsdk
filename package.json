@@ -39,7 +39,10 @@
   "dependencies": {
     "@alch/alchemy-sdk": "^1.2.0",
     "@pythnetwork/client": "^2.22.1",
+    "alchemy-sdk": "^3.6.3",
     "axios": "^1.12.2",
+    "cross-fetch": "^4.1.0",
+    "ethers": "^6.15.0",
     "nodemailer": "^7.0.6"
   }
 }

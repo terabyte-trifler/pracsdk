@@ -1,3 +1,4 @@
+/*
 import { PortfolioSnapshot } from "../../src/types.js";
 
 export const sample: PortfolioSnapshot = {
@@ -42,3 +43,4 @@ export const sample: PortfolioSnapshot = {
     { ts: new Date(Date.now()-1*24*3600*1000).toISOString(),  amountUSD: 2000, credit: true  }
   ]
 };
+*/

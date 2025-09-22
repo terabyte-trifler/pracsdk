@@ -33,3 +33,5 @@ const config: HardhatUserConfig = {
 
 export default config;
 import "./tasks/occr.update";
+import "./tasks/occr.set";
+import "./tasks/occr.read";
