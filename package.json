@@ -13,7 +13,6 @@
     "occr:update:rsk": "hardhat run scripts/compute-and-update.ts --network rskTestnet",
     "occr:update:hedera": "hardhat run scripts/compute-and-update.ts --network hederaTestnet",
     "occr:read:sepolia": "hardhat run scripts/read-score.ts --network sepolia"
-
   },
   "keywords": [],
   "author": "",
@@ -36,5 +35,11 @@
     "prettier-plugin-solidity": "^2.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@alch/alchemy-sdk": "^1.2.0",
+    "@pythnetwork/client": "^2.22.1",
+    "axios": "^1.12.2",
+    "nodemailer": "^7.0.6"
   }
 }
