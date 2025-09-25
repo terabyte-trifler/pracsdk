@@ -1,5 +1,12 @@
-export const OCCR_SCORER_ABI = [
-    "function calculateRiskScore(address user) view returns (uint256 score1000, uint8 tier, bytes32 algorithmId, uint256 lastUpdated)",
-    "function validateScore(address user, uint256 minScore) view returns (bool)",
-  ];
-  
+import { ethers } from "ethers";
+// import ABI straight from the compiled contract
+import OCCR_JSON from "../../artifacts/contracts/OCCRScorer.sol/OCCRScorer.json";
+
+export const OCCR_SCORER_ABI = OCCR_JSON.abi;
+
+export function getScorerContract(
+  address: string,
+  providerOrSigner: ethers.Provider | ethers.Signer
+) {
+  return new ethers.Contract(address, OCCR_SCORER_ABI, providerOrSigner);
+}

@@ -368,7 +368,14 @@ export interface OCCRScorer extends BaseContract {
 
   calculateRiskScore: TypedContractMethod<
     [user: AddressLike],
-    [[bigint, bigint] & { score: bigint; tier: bigint }],
+    [
+      [bigint, bigint, string, bigint] & {
+        score: bigint;
+        tier: bigint;
+        algoId: string;
+        lastUpdated: bigint;
+      }
+    ],
     "view"
   >;
 
@@ -460,7 +467,14 @@ export interface OCCRScorer extends BaseContract {
     nameOrSignature: "calculateRiskScore"
   ): TypedContractMethod<
     [user: AddressLike],
-    [[bigint, bigint] & { score: bigint; tier: bigint }],
+    [
+      [bigint, bigint, string, bigint] & {
+        score: bigint;
+        tier: bigint;
+        algoId: string;
+        lastUpdated: bigint;
+      }
+    ],
     "view"
   >;
   getFunction(

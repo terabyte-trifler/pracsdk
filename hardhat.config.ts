@@ -1,6 +1,7 @@
 // hardhat.config.ts
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-abi-exporter";   // 👈 added
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -29,10 +30,20 @@ const config: HardhatUserConfig = {
       accounts: ACCOUNTS,
     },
   },
+  abiExporter: {                          // 👈 new section
+    path: "./ui/src/abi",                 // export ABIs into your UI project
+    runOnCompile: true,                   // run automatically when you compile
+    clear: true,                          // clear old files before export
+    flat: true,                           // don't create nested folders
+    only: ["OCCRScorer"],                 // only export your scorer contract
+    spacing: 2,
+    format: "json"
+  },
 };
 
 export default config;
+
+// register Hardhat tasks
 import "./tasks/occr.update";
 import "./tasks/occr.set";
 import "./tasks/occr.read";
-

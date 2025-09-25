@@ -29,6 +29,16 @@ const _abi = [
         name: "tier",
         type: "uint8",
       },
+      {
+        internalType: "bytes32",
+        name: "algorithmId",
+        type: "bytes32",
+      },
+      {
+        internalType: "uint256",
+        name: "lastUpdated",
+        type: "uint256",
+      },
     ],
     stateMutability: "view",
     type: "function",

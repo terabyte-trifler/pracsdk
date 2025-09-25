@@ -101,7 +101,14 @@ export interface IRiskScorer extends BaseContract {
 
   calculateRiskScore: TypedContractMethod<
     [user: AddressLike],
-    [[bigint, bigint] & { score: bigint; tier: bigint }],
+    [
+      [bigint, bigint, string, bigint] & {
+        score: bigint;
+        tier: bigint;
+        algorithmId: string;
+        lastUpdated: bigint;
+      }
+    ],
     "view"
   >;
 
@@ -125,7 +132,14 @@ export interface IRiskScorer extends BaseContract {
     nameOrSignature: "calculateRiskScore"
   ): TypedContractMethod<
     [user: AddressLike],
-    [[bigint, bigint] & { score: bigint; tier: bigint }],
+    [
+      [bigint, bigint, string, bigint] & {
+        score: bigint;
+        tier: bigint;
+        algorithmId: string;
+        lastUpdated: bigint;
+      }
+    ],
     "view"
   >;
   getFunction(

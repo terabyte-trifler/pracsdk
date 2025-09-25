@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import { IRiskScorer } from "./IRiskScorer.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 
-/// @title OCCRScorer (Day-1 skeleton)
+/// @title OCCRScorer
 /// @notice Stores scores, tiers, freshness; oracle-gated updates; parameters updatable by admin.
 contract OCCRScorer is IRiskScorer, AccessControl {
     bytes32 public constant ADMIN_ROLE  = keccak256("ADMIN_ROLE");
@@ -38,13 +38,18 @@ contract OCCRScorer is IRiskScorer, AccessControl {
     }
 
     // --- IRiskScorer ---
-    function calculateRiskScore(address user) external view returns (uint256 score, uint8 tier) {
+    /// @notice Full score readout (score, tier, algoId, lastUpdated).
+    /// Stale entries => (0, D, algorithmId, 0).
+    function calculateRiskScore(address user)
+        external
+        view
+        returns (uint256 score, uint8 tier, bytes32 algoId, uint256 lastUpdated)
+    {
         RiskProfile memory p = _profiles[user];
-        // stale => 0, D
         if (p.lastUpdated == 0 || block.timestamp > p.lastUpdated + ttlSeconds) {
-            return (0, 3);
+            return (0, 3, algorithmId, 0);
         }
-        return (p.score, p.tier);
+        return (p.score, p.tier, p.algoId, p.lastUpdated);
     }
 
     function updateRiskParameters(bytes calldata params) external onlyRole(ADMIN_ROLE) {
@@ -53,7 +58,7 @@ contract OCCRScorer is IRiskScorer, AccessControl {
     }
 
     function validateScore(address user, uint256 minScore) external view returns (bool) {
-        (uint256 s,) = this.calculateRiskScore(user);
+        (uint256 s,,,) = this.calculateRiskScore(user);
         return s >= minScore;
     }
 

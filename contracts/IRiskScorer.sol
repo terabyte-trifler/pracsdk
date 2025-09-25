@@ -2,8 +2,18 @@
 pragma solidity ^0.8.24;
 
 interface IRiskScorer {
-    /// @notice Returns latest composite score (0-1000) and tier (A=0..D=3)
-    function calculateRiskScore(address user) external view returns (uint256 score, uint8 tier);
+    /// @notice Returns latest composite score, tier, algorithmId, and lastUpdated timestamp.
+    /// Score is 0–1000, Tier is A=0..D=3.
+    /// If stale/never updated, returns (0, 3, algorithmId, 0).
+    function calculateRiskScore(address user)
+        external
+        view
+        returns (
+            uint256 score,
+            uint8 tier,
+            bytes32 algorithmId,
+            uint256 lastUpdated
+        );
 
     /// @notice Admin-updated model parameters (abi-encoded)
     function updateRiskParameters(bytes calldata params) external;
