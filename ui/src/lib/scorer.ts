@@ -1,7 +1,6 @@
-// src/lib/scorer.ts
+// ui/src/lib/scorer.ts
 import { ethers } from "ethers";
-// ABI exported by hardhat-abi-exporter into ui/src/abi/OCCRScorer.json
-import OCCR_SCORER_ABI from "../abi/OCCRScorer.json";
+import OCCR_SCORER_JSON from "../abi/OCCRScorer.json";
 
 // -------- Types --------
 export type TierLetter = "A" | "B" | "C" | "D";
@@ -22,21 +21,15 @@ export type RiskScore = {
 // -------- Small utilities --------
 const TIER_MAP: TierLetter[] = ["A", "B", "C", "D"];
 
-function asNumber(x: bigint | number): number {
-  return typeof x === "bigint" ? Number(x) : x;
-}
-
-function decodeAlgoId(algoHex: string): string {
+function decodeAlgoId(hex32: string): string {
   try {
-    // ethers v6 has decodeBytes32String
-    return ethers.decodeBytes32String(algoHex);
+    return ethers.decodeBytes32String(hex32);
   } catch {
-    // if it wasn't a valid bytes32 string, just return hex
-    return algoHex;
+    return hex32; // fallback if not valid UTF-8 bytes32
   }
 }
 
-// -------- Provider / Signer helpers (optional convenience) --------
+// -------- Provider / Signer helpers --------
 export function getJsonRpcProvider(rpcUrl: string): ethers.JsonRpcProvider {
   return new ethers.JsonRpcProvider(rpcUrl);
 }
@@ -55,6 +48,8 @@ export async function getBrowserSigner(): Promise<ethers.Signer> {
 }
 
 // -------- Contract factory --------
+export const OCCR_SCORER_ABI = (OCCR_SCORER_JSON as any).abi;
+
 export function getScorerContract(
   address: string,
   providerOrSigner: ethers.Provider | ethers.Signer
@@ -67,7 +62,8 @@ export function getScorerContract(
 
 // -------- Reads --------
 /**
- * Read (score1000, tier, algorithmId, lastUpdated) from OCCRScorer.
+ * Read (score1000, tier, algorithmId, lastUpdated) from OCCRScorer and
+ * return a fully-typed RiskScore object (plus raw values).
  */
 export async function readRiskScore(
   scorerAddress: string,
@@ -77,29 +73,24 @@ export async function readRiskScore(
   if (!ethers.isAddress(userAddress)) {
     throw new Error(`Invalid user address: ${userAddress}`);
   }
-
   const ctr = getScorerContract(scorerAddress, provider);
-  // Expecting 4-tuple as per the updated contract ABI
-  const [scoreBn, tierNumBn, algoHex, lastBn] = await ctr.calculateRiskScore(
-    ethers.getAddress(userAddress)
-  );
 
-  const score1000 = asNumber(scoreBn);
-  const tierIdx = asNumber(tierNumBn);
-  const tier: TierLetter = TIER_MAP[Math.min(Math.max(tierIdx, 0), 3)];
-  const algorithmId = decodeAlgoId(algoHex);
-  const lastUpdated = asNumber(lastBn);
+  const [score1000, tierNumBN, algorithmIdHex, lastUpdatedBN] =
+    await ctr.calculateRiskScore(ethers.getAddress(userAddress));
+
+  const tierNum = Number(tierNumBN);
+  const tier = TIER_MAP[Math.max(0, Math.min(3, tierNum))];
 
   return {
-    score1000,
+    score1000: Number(score1000),
     tier,
-    algorithmId,
-    lastUpdated,
+    algorithmId: decodeAlgoId(algorithmIdHex),
+    lastUpdated: Number(lastUpdatedBN),
     raw: {
-      score1000: scoreBn,
-      tierNum: tierIdx,
-      algorithmIdHex: algoHex,
-      lastUpdated: lastBn,
+      score1000,
+      tierNum,
+      algorithmIdHex,
+      lastUpdated: lastUpdatedBN,
     },
   };
 }
@@ -117,13 +108,16 @@ export async function validateScore(
     throw new Error(`Invalid user address: ${userAddress}`);
   }
   const ctr = getScorerContract(scorerAddress, provider);
-  return await ctr.validateScore(ethers.getAddress(userAddress), Math.max(0, Math.min(1000, Math.floor(minScore))));
+  return await ctr.validateScore(
+    ethers.getAddress(userAddress),
+    Math.max(0, Math.min(1000, Math.floor(minScore)))
+  );
 }
 
 // -------- Write (optional) --------
 /**
  * Update score (requires an authorized updater signer).
- * This is handy for Hedera/RSK demos if you’re manually setting a score.
+ * Handy for Hedera/RSK demos when manually setting a score.
  */
 export async function updateScoreOnChain(
   scorerAddress: string,

@@ -47,3 +47,4 @@ export default config;
 import "./tasks/occr.update";
 import "./tasks/occr.set";
 import "./tasks/occr.read";
+import "./tasks/occr.functions";

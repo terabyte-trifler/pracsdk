@@ -19,6 +19,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.12.4",
   "devDependencies": {
+    "@chainlink/contracts": "^1.4.0",
+    "@chainlink/functions-toolkit": "^0.3.2",
     "@nomicfoundation/hardhat-toolbox": "3.0.0",
     "@openzeppelin/contracts": "^5.4.0",
     "@types/chai": "^4.3.20",

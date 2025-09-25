@@ -16,7 +16,15 @@ const SCORERS: Record<NetKey, string> = {
   hederaTestnet: import.meta.env.VITE_SCORER_HEDERA,
 };
 
-const TIER = ["A", "B", "C", "D"];
+const TIER = ["A", "B", "C", "D"] as const;
+
+function decodeAlgoId(hex32: string): string {
+  try {
+    return ethers.decodeBytes32String(hex32);
+  } catch {
+    return hex32; // fallback to 0x… if not a valid bytes32 string
+  }
+}
 
 export default function App() {
   const [net, setNet] = useState<NetKey>("hederaTestnet");
@@ -27,44 +35,55 @@ export default function App() {
     tier: string;
     algo: string;
     updated: string;
+    rawUpdated: number;
   }>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const provider = useMemo(() => {
-    const url = RPCS[net];
-    if (!url) return null;
-    return new ethers.JsonRpcProvider(url);
-  }, [net]);
-
+  const rpcUrl = RPCS[net];
   const scorerAddress = SCORERS[net];
+
+  const provider = useMemo(() => {
+    if (!rpcUrl) return null;
+    return new ethers.JsonRpcProvider(rpcUrl);
+  }, [rpcUrl]);
 
   async function getScore() {
     setError(null);
     setResult(null);
+
     if (!provider) {
-      setError("Missing RPC for selected network.");
+      setError(`Missing RPC for ${net}. Set VITE_RPC_* in ui/.env`);
+      return;
+    }
+    if (!scorerAddress || !ethers.isAddress(scorerAddress)) {
+      setError(`Missing/invalid scorer address for ${net}. Set VITE_SCORER_* in ui/.env`);
       return;
     }
     if (!ethers.isAddress(addr)) {
       setError("Invalid wallet address.");
       return;
     }
-    if (!scorerAddress || !ethers.isAddress(scorerAddress)) {
-      setError("Missing/invalid scorer address for this network.");
-      return;
-    }
+
     setLoading(true);
     try {
       const ctr = new ethers.Contract(scorerAddress, OCCR_SCORER_ABI, provider);
-      const [score1000, tierUint, algorithmId, lastUpdated] = await ctr.calculateRiskScore(addr);
+      // 4-return signature
+      const [score1000, tierUint, algorithmId, lastUpdated] =
+        await ctr.calculateRiskScore(ethers.getAddress(addr));
+
       const score = Number(score1000);
       const tier = TIER[Number(tierUint)] ?? "?";
-      const algo = typeof algorithmId === "string" ? algorithmId : ethers.hexlify(algorithmId);
-      const updated = new Date(Number(lastUpdated) * 1000).toLocaleString();
+      const algo = decodeAlgoId(typeof algorithmId === "string" ? algorithmId : ethers.hexlify(algorithmId));
+      const lu = Number(lastUpdated);
+      const updated = lu > 0 ? new Date(lu * 1000).toLocaleString() : "Not set / stale";
 
-      setResult({ score, tier, algo, updated });
+      setResult({ score, tier, algo, updated, rawUpdated: lu });
     } catch (e: any) {
-      setError(e?.message ?? String(e));
+      // Common decode error => ABI mismatch or wrong contract address
+      const msg = e?.shortMessage || e?.message || String(e);
+      setError(msg.includes("could not decode")
+        ? `${msg} — Check ABI and that the contract on ${net} matches the 4-value calculateRiskScore signature.`
+        : msg);
     } finally {
       setLoading(false);
     }
@@ -73,6 +92,7 @@ export default function App() {
   return (
     <div style={{maxWidth: 720, margin: "40px auto", fontFamily: "Inter, system-ui, sans-serif"}}>
       <h1>OCCR — On-Chain Credit Score (Multi-Chain)</h1>
+
       <div style={{display:"grid", gap:12, marginTop:16}}>
         <label>
           Network:&nbsp;
@@ -82,6 +102,11 @@ export default function App() {
             <option value="sepolia">Ethereum Sepolia</option>
           </select>
         </label>
+
+        <small style={{opacity:0.7}}>
+          RPC: {rpcUrl || "(not set)"} <br/>
+          Scorer: {scorerAddress || "(not set)"}
+        </small>
 
         <label>
           Wallet Address:&nbsp;
@@ -109,14 +134,29 @@ export default function App() {
           <p><b>Tier:</b> {result.tier}</p>
           <p><b>Algorithm:</b> {result.algo}</p>
           <p><b>Last Updated:</b> {result.updated}</p>
+          {result.rawUpdated === 0 && (
+            <small style={{color:"#666"}}>
+              (Tip: push a score with <code>occr:update</code> on Sepolia or <code>occr:set</code> on Hedera/RSK)
+            </small>
+          )}
         </div>
       )}
 
       <div style={{marginTop:24, fontSize:12, color:"#666"}}>
-        Tip: On Hedera/RSK, if you used <code>occr:set</code> to seed a score,
-        you should see it here. On Sepolia, run the off-chain compute pipeline
-        and <code>occr:update</code> to push scores, then refresh.
+        If you still see decode errors: 1) ensure the contract on this network
+        is the latest OCCRScorer (4-value <code>calculateRiskScore</code>), and 2) ensure this UI
+        ABI matches your deployed bytecode.
       </div>
     </div>
   );
 }
+
+/*export default function App() {
+  return (
+    <div style={{padding:20,fontFamily:'Inter,system-ui'}}>
+      <h1>OCCR — smoke test</h1>
+      <p>If you can read this, React is rendering. Next we’ll re-enable web3.</p>
+    </div>
+  );
+}*/
+
